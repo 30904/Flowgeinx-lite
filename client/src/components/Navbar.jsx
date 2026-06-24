@@ -1,9 +1,17 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isVault = location.pathname.startsWith('/vault');
+  const isLanding = location.pathname === '/';
+  const isAuth = location.pathname === '/auth';
+
+  if (isVault || isLanding || isAuth) return null;
 
   const handleLogout = () => {
     logout();
@@ -11,29 +19,37 @@ export default function Navbar() {
   };
 
   return (
-    <header className="border-b border-white/10 bg-navy-dark/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <Link to="/" className="flex items-center gap-2 text-xl font-bold">
-          <span className="text-teal">Flow</span>genix Lite
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-navy-dark/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5">
+        <Link to="/">
+          <Logo />
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3 sm:gap-4">
           {isAuthenticated ? (
             <>
-              <Link to="/vault" className="text-sm text-white/80 hover:text-teal">
+              <Link
+                to="/vault"
+                className="hidden text-sm text-white/80 transition hover:text-teal sm:inline"
+              >
                 My Vault
               </Link>
-              <span className="text-sm text-white/50">{user?.phone}</span>
-              <button type="button" onClick={handleLogout} className="btn-outline text-sm py-2 px-4">
+              <span className="hidden text-sm text-white/40 sm:inline">+91 {user?.phone}</span>
+              <Link to="/vault" className="btn-primary text-sm sm:hidden">
+                Vault
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn-outline hidden py-2 text-sm sm:inline-flex"
+              >
                 Logout
               </button>
             </>
           ) : (
-            <>
-              <Link to="/auth" className="btn-primary text-sm py-2 px-4">
-                Sign in
-              </Link>
-            </>
+            <Link to="/auth" className="btn-primary py-2 text-sm">
+              Sign in
+            </Link>
           )}
         </nav>
       </div>

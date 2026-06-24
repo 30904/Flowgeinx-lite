@@ -1,18 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../services/api';
-
-const CATEGORIES = [
-  { id: 'all', label: 'All' },
-  { id: 'identity', label: 'Identity' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'property', label: 'Property' },
-  { id: 'insurance', label: 'Insurance' },
-  { id: 'legal', label: 'Legal' },
-  { id: 'vehicle', label: 'Vehicle' },
-  { id: 'medical', label: 'Medical' },
-  { id: 'other', label: 'Other' },
-];
+import DocumentCard from '../components/DocumentCard';
+import VaultSidebar, { CATEGORIES } from '../components/VaultSidebar';
 
 export default function Dashboard() {
   const [docs, setDocs] = useState([]);
@@ -34,83 +23,80 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [category, search]);
 
-  return (
-    <div className="mx-auto flex max-w-6xl gap-6 px-4 py-8">
-      {/* Sidebar — Sarah: expand into VaultSidebar.jsx (T16) */}
-      <aside className="hidden w-48 shrink-0 md:block">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/40">
-          Categories
-        </p>
-        <ul className="space-y-1">
-          {CATEGORIES.map((c) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => setCategory(c.id)}
-                className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
-                  category === c.id
-                    ? 'bg-teal/20 text-teal'
-                    : 'text-white/70 hover:bg-white/5'
-                }`}
-              >
-                {c.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
+  const activeCategory = CATEGORIES.find((c) => c.id === category);
 
-      {/* Main */}
-      <main className="flex-1">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold">My Vault</h1>
-          <input
-            type="search"
-            className="input-field max-w-xs"
-            placeholder="Search documents…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+  return (
+    <div className="flex min-h-screen flex-col md:flex-row">
+      <VaultSidebar category={category} onCategoryChange={setCategory} />
+
+      <main className="flex-1 bg-surface">
+        <div className="border-b border-gray-200 bg-white px-4 py-4 md:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-navy md:text-2xl">My Vault</h1>
+              <p className="text-sm text-gray-500">
+                {activeCategory?.label || 'All Documents'}
+              </p>
+            </div>
+            <div className="flex w-full items-center gap-3 sm:w-auto">
+              {/* Mobile category picker */}
+              <select
+                className="input-field-light md:hidden"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="search"
+                className="input-field-light w-full sm:max-w-xs"
+                placeholder="Search documents…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+        <div className="px-4 py-6 md:px-8">
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
 
-        {loading ? (
-          <p className="text-white/50">Loading documents…</p>
-        ) : docs.length === 0 ? (
-          <div className="card text-center">
-            <p className="mb-2 text-lg font-medium">No documents yet</p>
-            <p className="text-sm text-white/50">
-              Upload modal coming in T17 — wire to{' '}
-              <code className="text-teal">POST /api/documents/upload</code>
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {docs.map((doc) => (
-              <Link
-                key={doc._id}
-                to={`/doc/${doc._id}`}
-                className="card block transition hover:border-teal/50"
-              >
-                {/* Sarah: replace with DocumentCard.jsx (T15) */}
-                <p className="font-medium">
-                  {doc.aiExtracted?.documentType || doc.originalFileName}
-                </p>
-                <p className="mt-1 text-sm text-white/50">{doc.category}</p>
-                {doc.aiExtracted?.expiryDate && (
-                  <p className="mt-2 text-xs text-teal">
-                    Expires: {new Date(doc.aiExtracted.expiryDate).toLocaleDateString()}
-                  </p>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
+          {loading ? (
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+              Loading documents…
+            </div>
+          ) : docs.length === 0 ? (
+            <div className="card-light mx-auto max-w-md text-center shadow-card">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-teal/10">
+                <svg className="h-7 w-7 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+              </div>
+              <p className="mb-2 text-lg font-semibold text-navy">No documents yet</p>
+              <p className="text-sm text-gray-500">
+                Upload modal coming in T17 — wire to{' '}
+                <code className="rounded bg-gray-100 px-1.5 py-0.5 text-teal-dark">
+                  POST /api/documents/upload
+                </code>
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {docs.map((doc) => (
+                <DocumentCard key={doc._id} doc={doc} />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment & secrets
+.env
+.env.local
+*.pem
+
+# Build output
+dist/
+build/
+client/dist/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+*.egg-info/
+.pytest_cache/
+
+# Local document storage (dev — until S3 credentials)
+server/templates/**
+!server/templates/.gitkeep

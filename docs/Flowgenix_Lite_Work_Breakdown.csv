@@ -1,0 +1,38 @@
+Week,Priority,Task ID,Task Description,Owner,Dependencies,Deliverable,Status
+Week 1,P0,T01,Initialize monorepo structure (client/server/ai-service),Arnav + Sarah,None,Git repo with folder layout,Done
+Week 1,P0,T02,MongoDB Atlas cluster setup + connection,Arnav,T01,MONGODB_URI working in dev,Done
+Week 1,P0,T03,User + Document + OTP Mongoose schemas,Arnav,T02,server/models/*.js,Done
+Week 1,P0,T04,OTP auth: send-otp + verify-otp + JWT refresh,Arnav,T03,/api/auth/* endpoints,Done
+Week 1,P0,T05,Local templates storage + S3-ready utils (AWS S3 when creds arrive),Arnav,T01,server/templates/ + utils/storage.js,Done
+Week 1,P0,T06,Python FastAPI service + /ai/extract endpoint,Arnav,T05,ai-service/main.py,Not Started
+Week 1,P0,T07,POST /documents/upload flow (R2 -> AI -> MongoDB),Arnav,T03-T06,Upload API working,Not Started
+Week 1,P0,T08,GET /documents list + GET /documents/:id + DELETE,Arnav,T07,Document CRUD APIs,Not Started
+Week 1,P0,T09,React + Vite + PWA plugin + Tailwind setup,Sarah,T01,client/ runs locally,Done
+Week 1,P0,T10,Match Flowgenix UI: colors navy/teal + base layout,Sarah,T09,tailwind.config + Navbar,Done
+Week 1,P0,T11,Landing page (hero + features + WhatsApp CTA),Sarah,T10,pages/Landing.jsx,Done
+Week 1,P0,T12,Auth page: phone input + 6-digit OTP UI,Sarah,T10,pages/Auth.jsx,Done
+Week 1,P0,T13,AuthContext + API service layer (auth calls),Sarah,T12,context/AuthContext + services/api.js,Done
+Week 2,P0,T14,Dashboard: sidebar categories + document grid,Sarah,T13,pages/Dashboard.jsx,In Progress
+Week 2,P0,T15,DocumentCard component (type icon expiry badge),Sarah,T14,components/DocumentCard.jsx,Not Started
+Week 2,P0,T16,VaultSidebar + search bar,Sarah,T14,components/VaultSidebar.jsx,Not Started
+Week 2,P1,T17,UploadModal: drag-drop + progress + AI result,Sarah,T15,components/UploadModal.jsx,Not Started
+Week 2,P1,T18,DocDetail page: extracted fields + doc preview,Sarah,T15,pages/DocDetail.jsx,Not Started
+Week 2,P1,T19,POST /documents/:id/ask API,Arnav,T08,Q&A backend endpoint,Not Started
+Week 2,P1,T20,Python /ai/qa endpoint,Arnav,T06,qa_engine.py,Not Started
+Week 2,P1,T21,Q&A chat UI on DocDetail page,Sarah,T18-T20,Chat interface in DocDetail,Not Started
+Week 2,P1,T22,WhatsApp webhook GET verification,Arnav,T04,/webhook/whatsapp verify,Not Started
+Week 2,P1,T23,WhatsApp POST: media download + save doc,Arnav,T22-T07,WhatsApp ingestion flow,Not Started
+Week 2,P1,T24,WhatsApp confirmation messages on save,Arnav,T23,utils/whatsapp.js,Not Started
+Week 3,P1,T25,Razorpay plans setup in dashboard,Arnav,None,RAZORPAY_PLAN_* in env,Not Started
+Week 3,P1,T26,POST /subscription/create + webhook handler,Arnav,T25,Subscription APIs,Not Started
+Week 3,P1,T27,Subscription page UI + Razorpay checkout,Sarah,T26,pages/Subscription.jsx,Not Started
+Week 3,P1,T28,Free tier enforcement (10 doc limit),Arnav,T07,Middleware on upload,Not Started
+Week 3,P1,T29,PATCH /documents/:id/tags endpoint,Arnav,T08,Tags API,Not Started
+Week 3,P2,T30,Reminder cron job (30/7/1 days),Arnav,T03,jobs/reminderJob.js,Not Started
+Week 3,P2,T31,WhatsApp reminder message dispatch,Arnav,T30-T24,Automated reminders,Not Started
+Week 3,P2,T32,PWA install prompt on mobile,Sarah,T09,Install banner component,Not Started
+Week 3,P2,T33,Deploy Node API to Railway,Arnav,T07-T28,Production API URL,Not Started
+Week 3,P2,T34,Deploy Python AI to Railway,Arnav,T06-T20,Internal AI URL,Not Started
+Week 3,P2,T35,Deploy React PWA to Vercel,Sarah,T14-T27,flowgenixlite.com,Not Started
+Week 3,P3,T36,Family vault (add members Pro plan),Arnav,T26,Family member APIs,Not Started
+Week 3,P3,T37,ReminderBadge component in UI,Sarah,T15,components/ReminderBadge.jsx,Not Started

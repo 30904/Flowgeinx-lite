@@ -1,0 +1,11 @@
+{
+  "name": "flowgenix-lite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flowgenix Lite monorepo — DocDrop document vault",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:ai": "cd ai-service && uvicorn main:app --host 0.0.0.0 --port 8001 --reload",
+    "dev:client": "npm run dev --prefix client"
+  }
+}

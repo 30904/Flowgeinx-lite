@@ -1,16 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import DocumentCard from '../components/DocumentCard';
+import UploadModal from '../components/UploadModal';
 import VaultSidebar, { CATEGORIES } from '../components/VaultSidebar';
 
 export default function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [category, setCategory] = useState('all');
-  const [search, setSearch] = useState('');
+  const [uploadOpen, setUploadOpen] = useState(false);
 
-  useEffect(() => {
+  const category = searchParams.get('category') || 'all';
+  const search = searchParams.get('search') || '';
+
+  const setCategory = (value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === 'all') next.delete('category');
+      else next.set('category', value);
+      return next;
+    });
+  };
+
+  const setSearch = (value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (!value.trim()) next.delete('search');
+      else next.set('search', value.trim());
+      return next;
+    });
+  };
+
+  const fetchDocs = useCallback(() => {
     const params = {};
     if (category !== 'all') params.category = category;
     if (search) params.search = search;
@@ -23,42 +46,45 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [category, search]);
 
+  useEffect(() => {
+    fetchDocs();
+  }, [fetchDocs]);
+
+  useEffect(() => {
+    if (searchParams.get('upload') === '1') {
+      setUploadOpen(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('upload');
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleUploadSuccess = () => {
+    fetchDocs();
+  };
+
   const activeCategory = CATEGORIES.find((c) => c.id === category);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <VaultSidebar category={category} onCategoryChange={setCategory} />
+      <VaultSidebar
+        category={category}
+        onCategoryChange={setCategory}
+        search={search}
+        onSearchChange={setSearch}
+        onUploadClick={() => setUploadOpen(true)}
+      />
 
       <main className="flex-1 bg-surface">
         <div className="border-b border-gray-200 bg-white px-4 py-4 md:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-navy md:text-2xl">My Vault</h1>
-              <p className="text-sm text-gray-500">
-                {activeCategory?.label || 'All Documents'}
-              </p>
-            </div>
-            <div className="flex w-full items-center gap-3 sm:w-auto">
-              {/* Mobile category picker */}
-              <select
-                className="input-field-light md:hidden"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="search"
-                className="input-field-light w-full sm:max-w-xs"
-                placeholder="Search documents…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <div>
+            <h1 className="text-xl font-bold text-navy md:text-2xl">My Vault</h1>
+            <p className="text-sm text-gray-500">
+              {activeCategory?.label || 'All Documents'}
+              {search && ` · "${search}"`}
+            </p>
           </div>
         </div>
 
@@ -82,12 +108,12 @@ export default function Dashboard() {
                 </svg>
               </div>
               <p className="mb-2 text-lg font-semibold text-navy">No documents yet</p>
-              <p className="text-sm text-gray-500">
-                Upload modal coming in T17 — wire to{' '}
-                <code className="rounded bg-gray-100 px-1.5 py-0.5 text-teal-dark">
-                  POST /api/documents/upload
-                </code>
+              <p className="mb-4 text-sm text-gray-500">
+                Upload your first Aadhaar, PAN, insurance policy, or lease.
               </p>
+              <button type="button" onClick={() => setUploadOpen(true)} className="btn-primary">
+                Upload document
+              </button>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -98,6 +124,12 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      <UploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
     </div>
   );
 }

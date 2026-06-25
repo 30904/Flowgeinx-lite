@@ -7,11 +7,14 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isVault = location.pathname.startsWith('/vault');
-  const isLanding = location.pathname === '/';
-  const isAuth = location.pathname === '/auth';
+  const isVaultArea =
+    location.pathname.startsWith('/vault') ||
+    location.pathname.startsWith('/doc') ||
+    location.pathname === '/subscription' ||
+    location.pathname === '/landing';
+  const isAuth = location.pathname === '/' || location.pathname === '/auth';
 
-  if (isVault || isLanding || isAuth) return null;
+  if (isVaultArea || isAuth) return null;
 
   const handleLogout = () => {
     logout();
@@ -47,7 +50,7 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link to="/auth" className="btn-primary py-2 text-sm">
+            <Link to="/" className="btn-primary py-2 text-sm">
               Sign in
             </Link>
           )}

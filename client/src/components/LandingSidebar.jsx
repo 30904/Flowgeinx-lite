@@ -20,7 +20,8 @@ const NAV_SECTIONS = [
   {
     label: 'Get Started',
     items: [
-      { id: 'auth', label: 'Sign in', icon: 'login', href: '/auth' },
+      { id: 'vault', label: 'My Vault', icon: 'login', href: '/vault' },
+      { id: 'subscription', label: 'Plans & Pricing', icon: 'subscription', href: '/subscription' },
       { id: 'whatsapp', label: 'WhatsApp', icon: 'whatsapp', href: 'https://wa.me/919876543210', external: true },
     ],
   },
@@ -72,6 +73,12 @@ function NavIcon({ type, className }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
         </svg>
       );
+    case 'subscription':
+      return (
+        <svg {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+        </svg>
+      );
     default:
       return (
         <svg {...props}>
@@ -96,7 +103,7 @@ export default function LandingSidebar({ activeSection, onSectionChange }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col bg-navy lg:flex lg:w-64">
       <div className="border-b border-white/10 px-5 py-5">
-        <Link to="/">
+        <Link to="/landing">
           <Logo showSubtitle />
         </Link>
       </div>
@@ -154,9 +161,12 @@ export default function LandingSidebar({ activeSection, onSectionChange }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/10 px-5 py-4">
-        <Link to="/auth" className="btn-primary w-full text-sm">
-          Get Started Free
+      <div className="space-y-2 border-t border-white/10 px-5 py-4">
+        <Link to="/subscription" className="btn-outline w-full border-white/30 text-sm text-white hover:bg-white/10">
+          View Plans
+        </Link>
+        <Link to="/vault" className="btn-primary w-full text-sm">
+          Open My Vault
         </Link>
       </div>
     </aside>

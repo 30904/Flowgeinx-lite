@@ -1,8 +1,9 @@
 const express = require('express');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
-const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
+const { resolveUser } = require('../utils/resolveUser');
+const devStore = require('../utils/devStore');
 
 const router = express.Router();
 
@@ -25,11 +26,17 @@ router.post('/create', authenticate, async (req, res) => {
   try {
     const { planId } = req.body;
     if (!planId || !PLAN_MAP[planId]) {
-      return res.status(400).json({ error: 'Invalid planId (basic or pro)' });
+      return res.status(400).json({
+        error: PLAN_MAP[planId]
+          ? 'Invalid planId (basic or pro)'
+          : `Razorpay plan not configured. Set RAZORPAY_PLAN_${planId.toUpperCase()} in .env`,
+      });
     }
 
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = await resolveUser(req.user);
+    if (!user) {
+      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    }
 
     const subscription = await getRazorpay().subscriptions.create({
       plan_id: PLAN_MAP[planId],
@@ -37,16 +44,24 @@ router.post('/create', authenticate, async (req, res) => {
       customer_notify: 1,
     });
 
-    user.subscription.razorpaySubId = subscription.id;
-    await user.save();
+    if (devStore.isEnabled()) {
+      devStore.updateSubscription(user._id, { razorpaySubId: subscription.id });
+    } else {
+      user.subscription.razorpaySubId = subscription.id;
+      await user.save();
+    }
 
     res.json({
       subscriptionId: subscription.id,
       shortUrl: subscription.short_url,
+      keyId: process.env.RAZORPAY_KEY_ID,
     });
   } catch (err) {
     console.error('subscription create error:', err);
-    res.status(500).json({ error: 'Failed to create subscription' });
+    const message = err.message?.includes('not configured')
+      ? err.message
+      : 'Failed to create subscription';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -68,7 +83,13 @@ router.post('/webhook', async (req, res) => {
 
     if (!payload) return res.json({ received: true });
 
-    const user = await User.findOne({ subscription: { razorpaySubId: payload.id } });
+    if (devStore.isEnabled()) {
+      res.json({ received: true });
+      return;
+    }
+
+    const User = require('../models/User');
+    const user = await User.findOne({ 'subscription.razorpaySubId': payload.id });
     if (!user) return res.json({ received: true });
 
     if (event === 'subscription.activated') {
@@ -96,14 +117,16 @@ router.post('/webhook', async (req, res) => {
 
 router.get('/status', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = await resolveUser(req.user);
+    if (!user) {
+      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    }
 
     res.json({
-      plan: user.subscription.plan,
-      status: user.subscription.status,
-      currentPeriodEnd: user.subscription.currentPeriodEnd,
-      docCount: user.docCount,
+      plan: user.subscription?.plan || 'free',
+      status: user.subscription?.status || 'active',
+      currentPeriodEnd: user.subscription?.currentPeriodEnd || null,
+      docCount: user.docCount || 0,
     });
   } catch (err) {
     console.error('subscription status error:', err);

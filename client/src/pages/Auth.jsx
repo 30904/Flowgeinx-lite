@@ -65,7 +65,7 @@ export default function Auth() {
     setLoading(true);
     try {
       await login(phone, otp);
-      navigate('/vault');
+      navigate('/landing');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -77,6 +77,28 @@ export default function Auth() {
     setStep('phone');
     setOtp('');
     setError('');
+  };
+
+  const handleGetStarted = async () => {
+    setError('');
+    if (step === 'otp') {
+      resetToPhone();
+      return;
+    }
+    if (!/^\d{10}$/.test(phone)) {
+      setError('Enter your 10-digit mobile number to get started');
+      document.getElementById('phone')?.focus();
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.sendOtp(phone);
+      setStep('otp');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -240,8 +262,9 @@ export default function Auth() {
               Don&apos;t have an account?{' '}
               <button
                 type="button"
-                onClick={() => (step === 'otp' ? resetToPhone() : document.getElementById('phone')?.focus())}
-                className="font-semibold text-teal hover:text-teal-dark hover:underline"
+                onClick={handleGetStarted}
+                disabled={loading}
+                className="font-semibold text-teal hover:text-teal-dark hover:underline disabled:opacity-60"
               >
                 Get Started
               </button>

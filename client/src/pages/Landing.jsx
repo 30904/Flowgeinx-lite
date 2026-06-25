@@ -88,10 +88,10 @@ const METRICS = [
   },
   {
     id: 'auth',
-    label: 'Sign In',
-    sublabel: 'OTP only',
-    value: '0 pwd',
-    trend: 'Mobile number login',
+    label: 'My Vault',
+    sublabel: 'Your documents',
+    value: 'Open',
+    trend: 'Upload & manage',
     trendUp: true,
     iconBg: 'bg-rose-500/10 text-rose-500',
     sparkColor: '#f43f5e',
@@ -139,37 +139,19 @@ export default function Landing() {
 
       <main className="flex-1 bg-surface">
         {/* Mobile header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+        <div className="flex items-center border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
           <Logo variant="dark" showSubtitle />
-          <Link to="/auth" className="btn-primary py-2 text-sm">
-            Sign in
-          </Link>
         </div>
 
         {/* Page header */}
         <header className="border-b border-gray-200 bg-white px-4 py-5 md:px-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-navy md:text-3xl">
-                Your documents, organized.
-              </h1>
-              <p className="mt-1 text-sm text-gray-500 md:text-base">
-                AI-powered vault for Aadhaar, PAN, insurance, leases & more — built for India.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/auth" className="btn-primary hidden py-2 text-sm sm:inline-flex">
-                Get Started Free
-              </Link>
-              <a
-                href="https://wa.me/919876543210"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-outline hidden py-2 text-sm sm:inline-flex"
-              >
-                WhatsApp
-              </a>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-navy md:text-3xl">
+              Your documents, organized.
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 md:text-base">
+              AI-powered vault for Aadhaar, PAN, insurance, leases & more — built for India.
+            </p>
           </div>
         </header>
 
@@ -197,7 +179,7 @@ export default function Landing() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <Link to="/auth" className="btn-primary shrink-0 gap-2">
+                <Link to="/vault" className="btn-primary shrink-0 gap-2">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                   </svg>
@@ -234,7 +216,7 @@ export default function Landing() {
                       ? undefined
                       : () => handleMetricClick(m.id)
                   }
-                  to={m.id === 'auth' ? '/auth' : undefined}
+                  to={m.id === 'auth' ? '/vault' : undefined}
                 />
               ))}
             </div>
@@ -370,22 +352,9 @@ export default function Landing() {
           {/* CTA */}
           <section className="card-interactive bg-navy p-8 text-center text-white">
             <h2 className="mb-2 text-xl font-bold md:text-2xl">Ready to secure your documents?</h2>
-            <p className="mx-auto mb-6 max-w-md text-sm text-white/60">
-              Free for up to 10 documents. Sign in with your mobile number — no password needed.
+            <p className="mx-auto max-w-md text-sm text-white/60">
+              Free for up to 10 documents. Upload, organize, and track renewals in your vault.
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/auth" className="btn-primary px-8">
-                Open My Vault
-              </Link>
-              <a
-                href="https://wa.me/919876543210"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-outline border-white/30 text-white hover:bg-white/10"
-              >
-                Send via WhatsApp
-              </a>
-            </div>
           </section>
         </div>
       </main>

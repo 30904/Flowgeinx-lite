@@ -3,8 +3,18 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const { generateTokens } = require('../middleware/auth');
 const { sendOTP, generateOTP } = require('../utils/otp');
+const devStore = require('../utils/devStore');
 
 const router = express.Router();
+
+function formatUser(user) {
+  return {
+    id: user._id,
+    phone: user.phone,
+    name: user.name,
+    plan: user.subscription?.plan || 'free',
+  };
+}
 
 router.post('/send-otp', async (req, res) => {
   try {
@@ -14,8 +24,13 @@ router.post('/send-otp', async (req, res) => {
     }
 
     const otp = generateOTP();
-    await OTP.deleteMany({ phone });
-    await OTP.create({ phone, otp });
+
+    if (devStore.isEnabled()) {
+      devStore.saveOtp(phone, otp);
+    } else {
+      await OTP.deleteMany({ phone });
+      await OTP.create({ phone, otp });
+    }
 
     if (process.env.FAST2SMS_KEY) {
       await sendOTP(phone, otp);
@@ -37,29 +52,35 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ error: 'Phone and OTP required' });
     }
 
-    const record = await OTP.findOne({ phone, otp });
-    if (!record) {
+    let valid = false;
+    if (devStore.isEnabled()) {
+      valid = devStore.verifyOtp(phone, otp);
+    } else {
+      const record = await OTP.findOne({ phone, otp });
+      valid = !!record;
+      if (valid) await OTP.deleteMany({ phone });
+    }
+
+    if (!valid) {
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
 
-    await OTP.deleteMany({ phone });
-
-    let user = await User.findOne({ phone });
-    if (!user) {
-      user = await User.create({ phone });
+    let user;
+    if (devStore.isEnabled()) {
+      user = devStore.findOrCreateUser(phone);
+    } else {
+      user = await User.findOne({ phone });
+      if (!user) {
+        user = await User.create({ phone });
+      }
     }
 
-    const { accessToken, refreshToken } = generateTokens(user._id.toString());
+    const { accessToken, refreshToken } = generateTokens(user._id.toString(), user.phone);
 
     res.json({
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        phone: user.phone,
-        name: user.name,
-        plan: user.subscription.plan,
-      },
+      user: formatUser(user),
     });
   } catch (err) {
     console.error('verify-otp error:', err);
@@ -76,7 +97,7 @@ router.post('/refresh', async (req, res) => {
 
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const { accessToken } = generateTokens(decoded.userId);
+    const { accessToken } = generateTokens(decoded.userId, decoded.phone);
 
     res.json({ accessToken });
   } catch {

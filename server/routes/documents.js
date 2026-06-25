@@ -1,9 +1,11 @@
 const express = require('express');
 const multer = require('multer');
 const Document = require('../models/Document');
-const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const { uploadFile, getFileUrl } = require('../utils/storage');
+const devStore = require('../utils/devStore');
+const { localDevExtract } = require('../utils/localExtract');
+const { resolveUser } = require('../utils/resolveUser');
 
 const router = express.Router();
 const upload = multer({
@@ -20,17 +22,28 @@ const defaultReminders = () => [
   { daysBefore: 1, sent: false },
 ];
 
-async function callAIExtract(fileUrl, mimeType) {
-  const res = await fetch(`${AI_SERVICE_URL}/ai/extract`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_url: fileUrl, mime_type: mimeType }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`AI extract failed: ${text}`);
+async function callAIExtract(fileBuffer, mimeType) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  try {
+    const res = await fetch(`${AI_SERVICE_URL}/ai/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_base64: fileBuffer.toString('base64'),
+        mime_type: mimeType,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`AI extract failed (${res.status}): ${text}`);
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json();
 }
 
 async function callAIQA(docSummary, keyFields, question) {
@@ -56,8 +69,10 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = await resolveUser(req.user);
+    if (!user) {
+      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    }
 
     if (user.subscription.plan === 'free' && user.docCount >= FREE_DOC_LIMIT) {
       return res.status(403).json({
@@ -71,18 +86,16 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
 
     let aiData = {};
     try {
-      aiData = await callAIExtract(signedUrl, req.file.mimetype);
+      aiData = await callAIExtract(req.file.buffer, req.file.mimetype);
     } catch (aiErr) {
       console.error('AI extraction error:', aiErr.message);
-      aiData = {
-        documentType: 'Unknown',
-        category: 'other',
-        summary: 'AI extraction pending or failed',
-        confidence: 0,
-      };
+      console.error(
+        'Tip: run `npm run dev:ai` from repo root and set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env'
+      );
+      aiData = localDevExtract(req.file.originalname, req.file.mimetype);
     }
 
-    const doc = await Document.create({
+    const docPayload = {
       userId: user._id,
       originalFileName: req.file.originalname,
       fileKey,
@@ -100,10 +113,17 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
         confidence: aiData.confidence,
       },
       reminders: defaultReminders(),
-    });
+    };
 
-    user.docCount += 1;
-    await user.save();
+    let doc;
+    if (devStore.isEnabled()) {
+      doc = devStore.createDocument(docPayload);
+      devStore.incrementDocCount(user._id);
+    } else {
+      doc = await Document.create(docPayload);
+      user.docCount += 1;
+      await user.save();
+    }
 
     res.status(201).json({ document: doc });
   } catch (err) {
@@ -117,6 +137,18 @@ router.get('/', authenticate, async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const { category, search } = req.query;
+
+    if (devStore.isEnabled()) {
+      const all = devStore.listDocuments(req.user.userId, { category, search });
+      const total = all.length;
+      const docs = all.slice((page - 1) * limit, page * limit);
+      return res.json({
+        docs,
+        total,
+        page,
+        pages: Math.ceil(total / limit) || 1,
+      });
+    }
 
     const filter = {
       userId: req.user.userId,
@@ -151,6 +183,13 @@ router.get('/', authenticate, async (req, res) => {
 
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    if (devStore.isEnabled()) {
+      const doc = devStore.findDocument(req.params.id, req.user.userId);
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+      const signedUrl = await getFileUrl(doc.fileKey);
+      return res.json({ ...doc, fileUrl: signedUrl });
+    }
+
     const doc = await Document.findOne({
       _id: req.params.id,
       userId: req.user.userId,
@@ -171,6 +210,12 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.delete('/:id', authenticate, async (req, res) => {
   try {
+    if (devStore.isEnabled()) {
+      const ok = devStore.softDeleteDocument(req.params.id, req.user.userId);
+      if (!ok) return res.status(404).json({ error: 'Document not found' });
+      return res.json({ success: true });
+    }
+
     const doc = await Document.findOne({
       _id: req.params.id,
       userId: req.user.userId,
@@ -189,25 +234,68 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+function localDevAnswer(doc, question) {
+  const ai = doc.aiExtracted || {};
+  const q = question.toLowerCase();
+
+  if (q.includes('expir')) {
+    return ai.expiryDate
+      ? `This document expires on ${new Date(ai.expiryDate).toLocaleDateString('en-IN')}.`
+      : 'No expiry date was extracted from this document.';
+  }
+  if (q.includes('holder') || q.includes('who')) {
+    return ai.holderName
+      ? `The holder name is ${ai.holderName}.`
+      : 'No holder name was extracted.';
+  }
+  if (q.includes('type') || q.includes('what kind')) {
+    return ai.documentType
+      ? `This is a ${ai.documentType}.`
+      : 'The document type could not be determined.';
+  }
+  if (q.includes('summar') || q.includes('key')) {
+    if (ai.summary) return ai.summary;
+    if (ai.keyFields && Object.keys(ai.keyFields).length) {
+      return Object.entries(ai.keyFields)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+    }
+  }
+  if (ai.summary) return ai.summary;
+  return `I can answer questions about expiry, holder name, and key fields for ${ai.documentType || doc.originalFileName || 'this document'}.`;
+}
+
 router.post('/:id/ask', authenticate, async (req, res) => {
   try {
     const { question } = req.body;
     if (!question) return res.status(400).json({ error: 'Question required' });
 
-    const doc = await Document.findOne({
-      _id: req.params.id,
-      userId: req.user.userId,
-      isDeleted: false,
-    });
+    let doc;
+    if (devStore.isEnabled()) {
+      doc = devStore.findDocument(req.params.id, req.user.userId);
+    } else {
+      doc = await Document.findOne({
+        _id: req.params.id,
+        userId: req.user.userId,
+        isDeleted: false,
+      });
+    }
     if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-    const result = await callAIQA(
-      doc.aiExtracted?.summary || '',
-      doc.aiExtracted?.keyFields || {},
-      question
-    );
-
-    res.json({ answer: result.answer });
+    try {
+      const result = await callAIQA(
+        doc.aiExtracted?.summary || '',
+        doc.aiExtracted?.keyFields || {},
+        question
+      );
+      return res.json({ answer: result.answer });
+    } catch (aiErr) {
+      if (devStore.isEnabled() || process.env.NODE_ENV !== 'production') {
+        console.warn('AI QA unavailable, using local fallback:', aiErr.message);
+        return res.json({ answer: localDevAnswer(doc, question) });
+      }
+      throw aiErr;
+    }
   } catch (err) {
     console.error('ask error:', err);
     res.status(500).json({ error: 'Failed to answer question' });

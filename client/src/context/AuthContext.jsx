@@ -14,6 +14,10 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(stored));
     }
     setLoading(false);
+
+    const onLogout = () => setUser(null);
+    window.addEventListener('auth:logout', onLogout);
+    return () => window.removeEventListener('auth:logout', onLogout);
   }, []);
 
   const login = async (phone, otp) => {

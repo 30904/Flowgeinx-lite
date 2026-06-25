@@ -2,14 +2,14 @@ import base64
 import json
 import os
 from pathlib import Path
+from typing import Optional
 
-import anthropic
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# Load root .env so ANTHROPIC_API_KEY works in local dev.
+# Load root .env so API keys work in local dev.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = FastAPI(title="Flowgenix Lite AI Service")
@@ -20,18 +20,29 @@ AI_PROVIDER = os.environ.get("AI_PROVIDER", "").strip().lower()
 if not AI_PROVIDER:
     AI_PROVIDER = "gemini" if GEMINI_API_KEY else "anthropic"
 
-anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+anthropic_client = None
 gemini_client = None
+
+if AI_PROVIDER == "anthropic":
+    try:
+        import anthropic
+        if ANTHROPIC_API_KEY:
+            anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        else:
+            print("[warn] ANTHROPIC_API_KEY missing — /ai/extract will return 503 until configured")
+    except ImportError as exc:
+        raise RuntimeError("Anthropic provider selected but anthropic package is not installed") from exc
 
 if AI_PROVIDER == "gemini":
     try:
         import google.generativeai as genai
     except ImportError as exc:
         raise RuntimeError("Gemini provider selected but google-generativeai is not installed") from exc
-    if not GEMINI_API_KEY:
-        raise RuntimeError("Gemini provider selected but GEMINI_API_KEY is missing")
-    genai.configure(api_key=GEMINI_API_KEY)
-    gemini_client = genai
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_client = genai
+    else:
+        print("[warn] GEMINI_API_KEY missing — /ai/extract will return 503 until configured")
 
 EXTRACT_MODEL = os.environ.get(
     "ANTHROPIC_MODEL" if AI_PROVIDER == "anthropic" else "GEMINI_MODEL",
@@ -61,7 +72,8 @@ Return ONLY valid JSON, no markdown, no explanation."""
 
 
 class ExtractRequest(BaseModel):
-    file_url: str
+    file_url: Optional[str] = None
+    file_base64: Optional[str] = None
     mime_type: str
 
 
@@ -172,9 +184,19 @@ async def health():
 
 @app.post("/ai/extract")
 async def extract_document(body: ExtractRequest):
-    file_bytes = await download_file(body.file_url)
+    if body.file_base64:
+        file_bytes = base64.b64decode(body.file_base64)
+    elif body.file_url:
+        file_bytes = await download_file(body.file_url)
+    else:
+        raise HTTPException(status_code=400, detail="file_url or file_base64 required")
+
     if AI_PROVIDER == "gemini":
+        if not gemini_client:
+            raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
         return run_extract_with_gemini(file_bytes, body.mime_type)
+    if not anthropic_client:
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured")
     return run_extract_with_anthropic(file_bytes, body.mime_type)
 
 

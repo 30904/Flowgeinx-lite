@@ -1,10 +1,9 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isVaultArea =
@@ -18,7 +17,6 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
   };
 
   return (
@@ -50,7 +48,7 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link to="/" className="btn-primary py-2 text-sm">
+            <Link to="/auth" className="btn-primary py-2 text-sm">
               Sign in
             </Link>
           )}

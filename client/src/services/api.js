@@ -117,11 +117,11 @@ export const api = {
       return data;
     }),
 
-  verifyOtp: (phone, otp) =>
+  verifyOtp: (phone, otp, email) =>
     fetch(`${API_BASE}/api/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify({ phone, otp, email }),
     }).then(async (res) => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);

@@ -39,7 +39,7 @@ function verifyOtp(phone, otp) {
   return true;
 }
 
-function findOrCreateUser(phone) {
+function findOrCreateUser(phone, email) {
   let user = usersByPhone.get(phone);
   if (!user) {
     const id = newId('user');
@@ -47,11 +47,14 @@ function findOrCreateUser(phone) {
       _id: id,
       phone,
       name: null,
+      email: email || null,
       subscription: { plan: 'free', status: 'active' },
       docCount: 0,
     };
     usersByPhone.set(phone, user);
     usersById.set(id, user);
+  } else if (email) {
+    user.email = email;
   }
   return user;
 }

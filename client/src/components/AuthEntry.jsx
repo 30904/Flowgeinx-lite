@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Auth from '../pages/Auth';
 
-export default function GuestRoute({ children }) {
+export default function AuthEntry() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
@@ -16,5 +17,5 @@ export default function GuestRoute({ children }) {
     return <Navigate to="/landing" replace />;
   }
 
-  return children;
+  return <Auth key="sign-in" />;
 }

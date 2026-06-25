@@ -1,3 +1,4 @@
+
 export default function Logo({ className = '', showSubtitle = false, variant = 'light' }) {
   const textColor = variant === 'light' ? 'text-white' : 'text-navy';
   const subColor = variant === 'light' ? 'text-teal' : 'text-teal-dark';

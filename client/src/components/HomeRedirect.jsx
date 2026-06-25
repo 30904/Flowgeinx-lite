@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export default function GuestRoute({ children }) {
+export default function HomeRedirect() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
@@ -12,9 +12,5 @@ export default function GuestRoute({ children }) {
     );
   }
 
-  if (isAuthenticated) {
-    return <Navigate to="/landing" replace />;
-  }
-
-  return children;
+  return <Navigate to={isAuthenticated ? '/landing' : '/auth'} replace />;
 }

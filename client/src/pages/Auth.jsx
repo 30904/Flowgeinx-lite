@@ -31,11 +31,24 @@ function BrandLogo() {
 export default function Auth() {
   const [step, setStep] = useState('phone');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const validateEmail = () => {
+    if (!email.trim()) {
+      setError('Enter your email address');
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Enter a valid email address');
+      return false;
+    }
+    return true;
+  };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -44,6 +57,7 @@ export default function Auth() {
       setError('Enter a valid 10-digit mobile number');
       return;
     }
+    if (!validateEmail()) return;
     setLoading(true);
     try {
       await api.sendOtp(phone);
@@ -64,7 +78,7 @@ export default function Auth() {
     }
     setLoading(true);
     try {
-      await login(phone, otp);
+      await login(phone, otp, email.trim().toLowerCase());
       navigate('/landing');
     } catch (err) {
       setError(err.message);
@@ -90,6 +104,10 @@ export default function Auth() {
       document.getElementById('phone')?.focus();
       return;
     }
+    if (!validateEmail()) {
+      document.getElementById('email')?.focus();
+      return;
+    }
     setLoading(true);
     try {
       await api.sendOtp(phone);
@@ -102,12 +120,12 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#e8eaed] px-4 py-8">
-      <div className="flex w-full max-w-[960px] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_8px_40px_rgba(13,27,42,0.12)] md:min-h-[600px] md:flex-row">
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#e8eaed] px-4 py-8 text-navy">
+      <div className="mx-auto flex w-full max-w-[960px] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_8px_40px_rgba(13,27,42,0.12)] md:min-h-[600px] md:flex-row">
         {/* Brand panel */}
         <div className="auth-marble relative flex flex-col justify-between px-8 py-10 md:w-1/2 md:px-10 md:py-12">
           <div className="relative z-10">
-            <Link to="/">
+            <Link to="/auth">
               <BrandLogo />
             </Link>
           </div>
@@ -196,6 +214,21 @@ export default function Auth() {
                       autoFocus
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    className="auth-input"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
                 </div>
 
                 <div className="flex items-center justify-between text-sm">

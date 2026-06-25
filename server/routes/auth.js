@@ -12,6 +12,7 @@ function formatUser(user) {
     id: user._id,
     phone: user.phone,
     name: user.name,
+    email: user.email || null,
     plan: user.subscription?.plan || 'free',
   };
 }
@@ -47,9 +48,13 @@ router.post('/send-otp', async (req, res) => {
 
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phone, otp } = req.body;
+    const { phone, otp, email } = req.body;
     if (!phone || !otp) {
       return res.status(400).json({ error: 'Phone and OTP required' });
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address' });
     }
 
     let valid = false;
@@ -67,11 +72,14 @@ router.post('/verify-otp', async (req, res) => {
 
     let user;
     if (devStore.isEnabled()) {
-      user = devStore.findOrCreateUser(phone);
+      user = devStore.findOrCreateUser(phone, email);
     } else {
       user = await User.findOne({ phone });
       if (!user) {
-        user = await User.create({ phone });
+        user = await User.create({ phone, email: email || undefined });
+      } else if (email) {
+        user.email = email;
+        await user.save();
       }
     }
 

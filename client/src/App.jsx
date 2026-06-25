@@ -2,9 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import GuestRoute from './components/GuestRoute';
+import AuthEntry from './components/AuthEntry';
 import Landing from './pages/Landing';
-import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import DocDetail from './pages/DocDetail';
 import Subscription from './pages/Subscription';
@@ -21,20 +20,18 @@ function AppLayout() {
   return (
     <div
       className={
-        isVaultArea || isLanding || isAuth ? 'min-h-screen bg-surface text-navy' : ''
+        isVaultArea || isLanding
+          ? 'min-h-screen bg-surface text-navy'
+          : isAuth
+            ? 'min-h-screen bg-[#e8eaed] text-navy'
+            : ''
       }
     >
       <Navbar />
       <Routes>
-        <Route
-          path="/"
-          element={
-            <GuestRoute>
-              <Auth />
-            </GuestRoute>
-          }
-        />
-        <Route path="/auth" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<AuthEntry />} />
+        <Route path="/auth" element={<AuthEntry />} />
+        <Route path="/auth/" element={<Navigate to="/auth" replace />} />
         <Route
           path="/landing"
           element={

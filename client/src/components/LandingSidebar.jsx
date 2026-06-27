@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 
@@ -40,7 +41,7 @@ function NavIcon({ type, className }) {
     case 'dashboard':
       return (
         <svg {...props}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25a2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
         </svg>
       );
     case 'sparkles':
@@ -93,19 +94,46 @@ function scrollToSection(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-export default function LandingSidebar({ activeSection, onSectionChange }) {
+export default function LandingSidebar({
+  activeSection,
+  onSectionChange,
+  mobile = false,
+  onNavigate,
+  onClose,
+}) {
+  const handleAfterNav = () => {
+    onNavigate?.();
+  };
+
   const handleNav = (item) => {
     if (item.href) return;
     onSectionChange?.(item.id);
     scrollToSection(item.id);
+    handleAfterNav();
   };
 
+  const asideClass = mobile
+    ? 'flex h-full w-full flex-col bg-navy'
+    : 'hidden w-60 shrink-0 flex-col bg-navy lg:flex lg:w-64';
+
   return (
-    <aside className="hidden w-60 shrink-0 flex-col bg-navy lg:flex lg:w-64">
-      <div className="border-b border-white/10 px-5 py-5">
-        <Link to="/landing">
+    <aside className={asideClass}>
+      <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+        <Link to="/landing" onClick={handleAfterNav}>
           <Logo showSubtitle />
         </Link>
+        {mobile && onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
@@ -130,6 +158,7 @@ export default function LandingSidebar({ activeSection, onSectionChange }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           className={className}
+                          onClick={handleAfterNav}
                         >
                           <NavIcon type={item.icon} className="h-4 w-4 shrink-0" />
                           {item.label}
@@ -139,7 +168,7 @@ export default function LandingSidebar({ activeSection, onSectionChange }) {
                   }
                   return (
                     <li key={item.id}>
-                      <Link to={item.href} className={className}>
+                      <Link to={item.href} className={className} onClick={handleAfterNav}>
                         <NavIcon type={item.icon} className="h-4 w-4 shrink-0" />
                         {item.label}
                       </Link>
@@ -162,13 +191,89 @@ export default function LandingSidebar({ activeSection, onSectionChange }) {
       </nav>
 
       <div className="space-y-2 border-t border-white/10 px-5 py-4">
-        <Link to="/subscription" className="btn-outline w-full border-white/30 text-sm text-white hover:bg-white/10">
+        <Link
+          to="/subscription"
+          className="btn-outline w-full border-white/30 text-sm text-white hover:bg-white/10"
+          onClick={handleAfterNav}
+        >
           View Plans
         </Link>
-        <Link to="/vault" className="btn-primary w-full text-sm">
+        <Link to="/vault" className="btn-primary w-full text-sm" onClick={handleAfterNav}>
           Open My Vault
         </Link>
       </div>
     </aside>
+  );
+}
+
+export function LandingMobileNav({ open, onClose, activeSection, onSectionChange }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div className="lg:hidden" aria-hidden={!open}>
+      <button
+        type="button"
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onClose}
+        aria-label="Close menu"
+        tabIndex={open ? 0 : -1}
+      />
+
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-[min(100%,16rem)] shadow-xl transition-transform duration-300 ease-out ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+      >
+        <LandingSidebar
+          mobile
+          activeSection={activeSection}
+          onSectionChange={onSectionChange}
+          onNavigate={onClose}
+          onClose={onClose}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function HamburgerButton({ open, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-navy transition hover:border-teal/40 hover:bg-teal/5"
+      aria-label={open ? 'Close menu' : 'Open menu'}
+      aria-expanded={open}
+    >
+      {open ? (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      ) : (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      )}
+    </button>
   );
 }

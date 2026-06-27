@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import LandingSidebar from '../components/LandingSidebar';
+import LandingSidebar, { HamburgerButton, LandingMobileNav } from '../components/LandingSidebar';
 import MetricCard from '../components/MetricCard';
 import FeaturePanelCard from '../components/FeaturePanelCard';
 import PageTopBar from '../components/PageTopBar';
+import InstallPrompt from '../components/InstallPrompt';
 import Logo from '../components/Logo';
 
 const METRICS = [
@@ -127,6 +128,7 @@ function scrollToSection(id) {
 export default function Landing() {
   const [activeSection, setActiveSection] = useState('overview');
   const [query, setQuery] = useState('');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const handleMetricClick = (id) => {
     setActiveSection(id);
@@ -138,10 +140,23 @@ export default function Landing() {
     <div className="flex min-h-screen flex-col lg:flex-row">
       <LandingSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
+      <LandingMobileNav
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      />
+
       <main className="flex-1 bg-surface">
         {/* Mobile header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
-          <Logo variant="dark" showSubtitle />
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <HamburgerButton
+              open={mobileNavOpen}
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+            />
+            <Logo variant="dark" showSubtitle />
+          </div>
           <PageTopBar compact />
         </div>
 
@@ -365,6 +380,8 @@ export default function Landing() {
           </section>
         </div>
       </main>
+
+      <InstallPrompt />
     </div>
   );
 }

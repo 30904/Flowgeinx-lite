@@ -1,32 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-
-const FEATURES = [
-  'AI-Powered Document Intelligence',
-  'WhatsApp Upload & Reminders',
-  'Expiry Tracking & Alerts',
-  'Secure Vault for Indian Documents',
-];
-
-function BrandLogo() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg">
-        <svg className="h-6 w-6 text-teal" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M6 18V6h3l3 6 3-6h3v12h-2.5V9.5L13.5 18h-1.5l-1.5-8.5V18H6z"
-            fill="currentColor"
-          />
-        </svg>
-      </div>
-      <span className="text-xl font-bold text-white">
-        Flow<span className="text-teal-light">genix</span> Lite
-      </span>
-    </div>
-  );
-}
+import Logo from '../components/Logo';
 
 export default function Auth() {
   const [step, setStep] = useState('phone');
@@ -120,18 +96,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#e8eaed] px-4 py-8 text-navy">
-      <div className="mx-auto flex w-full max-w-[960px] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_8px_40px_rgba(13,27,42,0.12)] md:min-h-[600px] md:flex-row">
-        {/* Brand panel */}
-        <div className="auth-marble relative flex flex-col justify-between px-8 py-10 md:w-1/2 md:px-10 md:py-12">
+    <div className="flex min-h-screen w-full bg-white text-navy md:items-center md:justify-center md:bg-[#e8eaed] md:px-4 md:py-8">
+      <div className="mx-auto flex w-full max-w-[960px] flex-col overflow-hidden bg-white md:min-h-[600px] md:flex-row md:rounded-3xl md:shadow-[0_8px_40px_rgba(13,27,42,0.12)]">
+        {/* Brand panel — desktop only */}
+        <div className="auth-marble relative hidden w-1/2 flex-col justify-between px-10 py-12 md:flex">
           <div className="relative z-10">
-            <Link to="/auth">
-              <BrandLogo />
-            </Link>
+            <Logo showSubtitle />
           </div>
 
-          <div className="relative z-10 my-8 md:my-0">
-            <h1 className="mb-4 text-2xl font-bold leading-snug text-white md:text-3xl lg:text-[2rem]">
+          <div className="relative z-10">
+            <h1 className="mb-4 text-3xl font-bold leading-snug text-white lg:text-[2rem]">
               Smarter documents,
               <br />
               faster decisions.
@@ -141,7 +115,12 @@ export default function Auth() {
               reminders.
             </p>
             <ul className="space-y-4">
-              {FEATURES.map((item) => (
+              {[
+                'AI-Powered Document Intelligence',
+                'WhatsApp Upload & Reminders',
+                'Expiry Tracking & Alerts',
+                'Secure Vault for Indian Documents',
+              ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-sm text-white/80">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10">
                     <svg
@@ -176,8 +155,11 @@ export default function Auth() {
         </div>
 
         {/* Form panel */}
-        <div className="flex flex-1 flex-col justify-center px-8 py-10 md:px-12 md:py-12">
+        <div className="flex flex-1 flex-col justify-center px-6 py-10 md:px-12 md:py-12">
           <div className="mx-auto w-full max-w-sm">
+            <div className="mb-6 md:hidden">
+              <Logo variant="dark" showSubtitle />
+            </div>
             <h2 className="mb-1 text-2xl font-bold text-navy md:text-3xl">
               {step === 'phone' ? 'Welcome Back' : 'Verify OTP'}
             </h2>
